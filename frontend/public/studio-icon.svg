@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff0000" />
+      <stop offset="50%" stop-color="#cc0000" />
+      <stop offset="100%" stop-color="#990000" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#ff0000" flood-opacity="0.4" />
+    </filter>
+  </defs>
+  
+  <!-- App Background -->
+  <rect width="512" height="512" rx="112" fill="#0f0f0f" />
+  
+  <!-- Outer Badge -->
+  <rect x="36" y="36" width="440" height="440" rx="96" fill="url(#grad)" filter="url(#shadow)" />
+  
+  <!-- Inner Border -->
+  <rect x="44" y="44" width="424" height="424" rx="88" fill="none" stroke="#ffffff" stroke-width="4" stroke-opacity="0.25" />
+  
+  <!-- Play Icon / Studio Symbol -->
+  <path d="M210 180 L350 256 L210 332 Z" fill="#ffffff" />
+  
+  <!-- Monogram OS -->
+  <text x="256" y="415" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="52" fill="#ffffff" text-anchor="middle" letter-spacing="4">OSAMA STUDIO</text>
+</svg>
