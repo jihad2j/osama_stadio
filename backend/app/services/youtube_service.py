@@ -45,19 +45,35 @@ def get_video_stats(video_ids: list) -> Dict[str, Any]:
 def get_youtube_client() -> Optional[Any]:
     """
     استرجاع عميل YouTube API موثوق عبر OAuth2 token المحفوظ.
-    إذا لم يكن موجوداً أو كان منتهياً، يتم تجديده تلقائياً.
+    يدعم القراءة من ملف youtube_token.json أو من المتغير البيئي YOUTUBE_TOKEN_JSON في السحابة (Render).
     """
     creds = None
+    token_env = os.getenv("YOUTUBE_TOKEN_JSON")
+    
+    if token_env and not TOKEN_FILE.exists():
+        try:
+            TOKEN_FILE.parent.mkdir(parents=True, exist_ok=True)
+            with open(TOKEN_FILE, "w", encoding="utf-8") as f:
+                f.write(token_env)
+        except Exception as e:
+            logger.warning(f"Could not write YOUTUBE_TOKEN_JSON to disk: {e}")
+
     if TOKEN_FILE.exists():
         try:
             creds = Credentials.from_authorized_user_file(str(TOKEN_FILE), SCOPES)
         except Exception as e:
             logger.warning(f"Failed loading token: {e}")
+    elif token_env:
+        try:
+            creds = Credentials.from_authorized_user_info(json.loads(token_env), SCOPES)
+        except Exception as e:
+            logger.warning(f"Failed loading token from env: {e}")
 
     # If no valid credentials, refresh if possible
     if creds and creds.expired and creds.refresh_token:
         try:
             creds.refresh(Request())
+            TOKEN_FILE.parent.mkdir(parents=True, exist_ok=True)
             with open(TOKEN_FILE, "w") as token:
                 token.write(creds.to_json())
         except Exception as e:
@@ -91,6 +107,16 @@ def start_local_auth_flow() -> bool:
     تشغيل تدفق التوثيق لأول مرة محلياً لإنشاء وتخزين token.json
     """
     secret_path = Path(YOUTUBE_CLIENT_SECRET_FILE)
+    if not secret_path.exists():
+        secret_env = os.getenv("YOUTUBE_CLIENT_SECRET_JSON")
+        if secret_env:
+            try:
+                secret_path.parent.mkdir(parents=True, exist_ok=True)
+                with open(secret_path, "w", encoding="utf-8") as f:
+                    f.write(secret_env)
+            except Exception:
+                pass
+
     if not secret_path.exists():
         logger.error(f"client_secret.json not found at {secret_path}")
         return False
