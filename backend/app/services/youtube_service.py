@@ -44,12 +44,24 @@ def get_video_stats(video_ids: list) -> Dict[str, Any]:
 
 def get_youtube_client() -> Optional[Any]:
     """
-    استرجاع عميل YouTube API موثوق عبر OAuth2 token المحفوظ.
-    يدعم القراءة من ملف youtube_token.json أو من المتغير البيئي YOUTUBE_TOKEN_JSON في السحابة (Render).
+    استرجاع عميل YouTube API موثوق عبر OAuth2 token الموحد على مستوى السيرفر.
+    يدعم القراءة من:
+      1. ملف youtube_token.json المركزي على السيرفر
+      2. إعدادات السيرفر settings.json (التي يشترك بها جميع العملاء عبر الواجهة)
+      3. المتغيرات البيئية (YOUTUBE_TOKEN_JSON أو YOUTUBE_REFRESH_TOKEN)
     """
     creds = None
     token_env = os.getenv("YOUTUBE_TOKEN_JSON")
     
+    # Try reading token from settings.json if exists
+    token_from_settings = None
+    try:
+        from app.services.settings_service import load_settings, save_settings
+        st = load_settings()
+        token_from_settings = st.get("publishing", {}).get("youtube_token")
+    except Exception:
+        pass
+
     if token_env and not TOKEN_FILE.exists():
         try:
             TOKEN_FILE.parent.mkdir(parents=True, exist_ok=True)
@@ -58,24 +70,65 @@ def get_youtube_client() -> Optional[Any]:
         except Exception as e:
             logger.warning(f"Could not write YOUTUBE_TOKEN_JSON to disk: {e}")
 
+    if not TOKEN_FILE.exists() and token_from_settings:
+        try:
+            TOKEN_FILE.parent.mkdir(parents=True, exist_ok=True)
+            with open(TOKEN_FILE, "w", encoding="utf-8") as f:
+                f.write(json.dumps(token_from_settings) if isinstance(token_from_settings, dict) else token_from_settings)
+        except Exception as e:
+            logger.warning(f"Could not write token from settings to disk: {e}")
+
     if TOKEN_FILE.exists():
         try:
             creds = Credentials.from_authorized_user_file(str(TOKEN_FILE), SCOPES)
         except Exception as e:
-            logger.warning(f"Failed loading token: {e}")
+            logger.warning(f"Failed loading token from file: {e}")
     elif token_env:
         try:
             creds = Credentials.from_authorized_user_info(json.loads(token_env), SCOPES)
         except Exception as e:
             logger.warning(f"Failed loading token from env: {e}")
+    elif token_from_settings:
+        try:
+            info = json.loads(token_from_settings) if isinstance(token_from_settings, str) else token_from_settings
+            creds = Credentials.from_authorized_user_info(info, SCOPES)
+        except Exception as e:
+            logger.warning(f"Failed loading token from settings: {e}")
 
-    # If no valid credentials, refresh if possible
+    # Fallback to individual env vars if available
+    if not creds:
+        c_id = os.getenv("YOUTUBE_CLIENT_ID")
+        c_secret = os.getenv("YOUTUBE_CLIENT_SECRET")
+        r_token = os.getenv("YOUTUBE_REFRESH_TOKEN")
+        if c_id and c_secret and r_token:
+            try:
+                creds = Credentials.from_authorized_user_info({
+                    "token": "",
+                    "refresh_token": r_token,
+                    "token_uri": "https://oauth2.googleapis.com/token",
+                    "client_id": c_id,
+                    "client_secret": c_secret,
+                    "scopes": SCOPES
+                }, SCOPES)
+            except Exception as e:
+                logger.warning(f"Failed loading token from credentials env: {e}")
+
+    # If credentials expired and has refresh_token, refresh automatically
     if creds and creds.expired and creds.refresh_token:
         try:
             creds.refresh(Request())
+            token_json = creds.to_json()
             TOKEN_FILE.parent.mkdir(parents=True, exist_ok=True)
             with open(TOKEN_FILE, "w") as token:
-                token.write(creds.to_json())
+                token.write(token_json)
+            # Sync to settings.json
+            try:
+                from app.services.settings_service import load_settings, save_settings
+                current_st = load_settings()
+                current_st.setdefault("publishing", {})["youtube_token"] = json.loads(token_json)
+                save_settings(current_st)
+            except Exception:
+                pass
         except Exception as e:
             logger.error(f"Failed to refresh YouTube token: {e}")
             creds = None
@@ -125,10 +178,19 @@ def start_local_auth_flow() -> bool:
     # Run local server on an available port
     creds = flow.run_local_server(port=0)
     
+    token_json = creds.to_json()
     TOKEN_FILE.parent.mkdir(parents=True, exist_ok=True)
     with open(TOKEN_FILE, "w") as token:
-        token.write(creds.to_json())
+        token.write(token_json)
         
+    try:
+        from app.services.settings_service import load_settings, save_settings
+        current_st = load_settings()
+        current_st.setdefault("publishing", {})["youtube_token"] = json.loads(token_json)
+        save_settings(current_st)
+    except Exception:
+        pass
+
     return True
 
 def generate_video_thumbnail(video_path: str, thumb_path: str) -> Optional[str]:

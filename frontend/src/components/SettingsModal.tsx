@@ -20,7 +20,15 @@ import {
   Globe,
   Laptop,
 } from "lucide-react";
-import { fetchSettings, updateSettings, testNotify, PublicSettings, getApiBase, setCustomApiBase, fetchHealth, DEFAULT_SERVER_URL } from "@/lib/api";
+import { fetchSettings, updateSettings, testNotify, triggerYoutubeAuth, PublicSettings, getApiBase, setCustomApiBase, fetchHealth, DEFAULT_SERVER_URL } from "@/lib/api";
+
+function YouTubeIcon({ className = "w-5 h-5 text-red-500" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+    </svg>
+  );
+}
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -38,6 +46,9 @@ export default function SettingsModal({ isOpen, onClose, onSettingsSaved }: Sett
   const [backendUrl, setBackendUrl] = useState("");
   const [testingServer, setTestingServer] = useState(false);
   const [serverStatus, setServerStatus] = useState<string | null>(null);
+  const [checkingYt, setCheckingYt] = useState(false);
+  const [ytTokenJson, setYtTokenJson] = useState("");
+  const [showTokenInput, setShowTokenInput] = useState(false);
 
   // Form Fields
   const [llmProvider, setLlmProvider] = useState<string>("gemini");
@@ -138,6 +149,13 @@ export default function SettingsModal({ isOpen, onClose, onSettingsSaved }: Sett
     payload.publishing = {};
     if (tgToken) payload.publishing.telegram_bot_token = tgToken;
     if (tgChatId) payload.publishing.telegram_chat_id = tgChatId;
+    if (ytTokenJson.trim()) {
+      try {
+        payload.publishing.youtube_token = JSON.parse(ytTokenJson.trim());
+      } catch (e) {
+        setSuccessMsg("تنبيه: صيغة JSON للتوكن غير صحيحة، لم يتم حفظ التوكن.");
+      }
+    }
 
     try {
       const res = await updateSettings(payload);
@@ -242,6 +260,20 @@ export default function SettingsModal({ isOpen, onClose, onSettingsSaved }: Sett
 
         {/* Form Body */}
         <form onSubmit={handleSave} className="flex-1 overflow-y-auto p-6 space-y-6">
+          {/* Unified Server Settings Notice Banner */}
+          <div className="p-3.5 rounded-xl bg-gradient-to-r from-red-950/40 via-[#181818] to-zinc-900 border border-red-500/30 text-xs text-zinc-300 flex items-start gap-3">
+            <Globe className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+            <div className="space-y-0.5">
+              <div className="font-bold text-white flex items-center gap-2">
+                <span>إعدادات موحدة مركزياً على السيرفر (Unified Server)</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded bg-red-600/30 text-red-400 border border-red-500/30">مشتركة لجميع الأجهزة</span>
+              </div>
+              <p className="text-[11px] text-[#aaa] leading-relaxed">
+                جميع المفاتيح، والنماذج المختارة، وحساب YouTube المربوط تُحفظ على السيرفر وتسري فوراً وبشكل موحد على الهاتف، المتصفح، وكافة الأجهزة.
+              </p>
+            </div>
+          </div>
+
           {successMsg && (
             <div className="p-3.5 rounded-xl bg-green-950/30 border border-green-800/50 text-green-400 text-xs flex items-center gap-2">
               <Check className="w-4 h-4 text-green-500 shrink-0" />
@@ -258,7 +290,7 @@ export default function SettingsModal({ isOpen, onClose, onSettingsSaved }: Sett
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {[
-                    { id: "gemini", label: "Google Gemini", sub: "2.5 Flash / 2.0" },
+                    { id: "gemini", label: "Google Gemini", sub: "3.8 Flash (موصى به) / 2.0" },
                     { id: "openai", label: "OpenAI", sub: "GPT-4o / mini" },
                     { id: "groq", label: "Groq", sub: "Llama 3.3 (فائق السرعة)" },
                     { id: "openrouter", label: "OpenRouter", sub: "DeepSeek / Claude" },
@@ -282,24 +314,45 @@ export default function SettingsModal({ isOpen, onClose, onSettingsSaved }: Sett
 
               {/* Conditional Inputs */}
               {llmProvider === "gemini" && (
-                <div className="space-y-2 p-4 rounded-xl bg-slate-900/60 border border-slate-800">
-                  <label className="block text-xs font-semibold text-slate-200">
-                    Gemini API Key:
-                  </label>
-                  <input
-                    type="password"
-                    value={geminiKey}
-                    onChange={(e) => setGeminiKey(e.target.value)}
-                    placeholder={settings?.llm.has_gemini_key ? `محفوظ مسبقاً (${settings.llm.gemini_key_masked})` : "أدخل مفتاح Gemini API"}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
-                  />
-                  <p className="text-[11px] text-slate-400 flex items-center justify-between">
-                    <span>احصل عليه مجاناً من Google AI Studio</span>
-                    <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-indigo-400 hover:underline inline-flex items-center gap-1">
-                      <span>فتح AI Studio</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </p>
+                <div className="space-y-3 p-4 rounded-xl bg-slate-900/60 border border-slate-800">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-200 mb-1">
+                      Gemini API Key:
+                    </label>
+                    <input
+                      type="password"
+                      value={geminiKey}
+                      onChange={(e) => setGeminiKey(e.target.value)}
+                      placeholder={settings?.llm.has_gemini_key ? `محفوظ مسبقاً (${settings.llm.gemini_key_masked})` : "أدخل مفتاح Gemini API"}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
+                    />
+                    <p className="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
+                      <span>احصل عليه مجاناً أو عبر اشتراكك في Google AI Studio</span>
+                      <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-indigo-400 hover:underline inline-flex items-center gap-1">
+                        <span>فتح AI Studio</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </p>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-800/80">
+                    <label className="block text-xs font-semibold text-slate-200 mb-1">
+                      إصدار نموذج Gemini المعتمد على السيرفر:
+                    </label>
+                    <select
+                      value={llmModel || "gemini-3.8-flash"}
+                      onChange={(e) => setLlmModel(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
+                    >
+                      <option value="gemini-3.8-flash">gemini-3.8-flash (الأحدث والأسرع - موصى به ⚡)</option>
+                      <option value="gemini-2.0-flash">gemini-2.0-flash (مستقر وسريع)</option>
+                      <option value="gemini-1.5-flash">gemini-1.5-flash (كفاءة عالية)</option>
+                      <option value="gemini-1.5-pro">gemini-1.5-pro (تحليل وذكاء متقدم)</option>
+                    </select>
+                    <p className="text-[10px] text-emerald-400 mt-1">
+                      ✨ تم تحديث المحرك لدعم <strong>gemini-3.8-flash</strong> رسمياً، مع تفعيل نظام التبديل الاحتياطي التلقائي (Fallback Chain).
+                    </p>
+                  </div>
                 </div>
               )}
 
@@ -555,6 +608,105 @@ export default function SettingsModal({ isOpen, onClose, onSettingsSaved }: Sett
           {/* TAB 4: PUBLISHING & NOTIFICATIONS */}
           {activeTab === "publishing" && (
             <div className="space-y-4">
+              {/* UNIFIED YOUTUBE CHANNEL CARD */}
+              <div className="p-4 rounded-xl bg-[#161616] border border-[#272727] space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <YouTubeIcon className="w-5 h-5 text-red-500" />
+                    <div>
+                      <span className="font-bold text-xs text-white block">حساب YouTube الموحد على السيرفر</span>
+                      <span className="text-[10px] text-[#777]">قناة يوتيوب مشتركة لجميع الأجهزة والعملاء</span>
+                    </div>
+                  </div>
+                  {settings?.publishing?.youtube_authenticated ? (
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center gap-1.5">
+                      <Check className="w-3 h-3 text-emerald-400" />
+                      <span>متصل وموثق ✓</span>
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/15 border border-amber-500/30 text-amber-400">
+                      غير موثق
+                    </span>
+                  )}
+                </div>
+
+                {settings?.publishing?.youtube_authenticated ? (
+                  <div className="p-3.5 rounded-lg bg-[#0f0f0f] border border-[#262626] space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-[#aaa]">القناة المربوطة بالسيرفر:</span>
+                      <span className="text-xs font-bold text-white font-mono flex items-center gap-1.5 bg-[#1b1b1b] px-2.5 py-1 rounded-md border border-[#333]">
+                        <YouTubeIcon className="w-3.5 h-3.5" />
+                        <span>{settings.publishing.youtube_channel_name || "Bleodh Hasbdk"}</span>
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[#888] leading-relaxed">
+                      🌟 <strong>حساب موحد:</strong> هذا الحساب مرتبط مركزياً على مستوى السيرفر. أي فيديو تقوم بنشره من أي جهاز (المتصفح، هاتف أندرويد، أو غيره) سيُنشر فوراً إلى هذه القناة الموحدة دون الحاجة لربط كل جهاز على حدة.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="p-3.5 rounded-lg bg-amber-950/20 border border-amber-800/40 text-xs text-amber-300 space-y-1">
+                    <p className="leading-relaxed">
+                      حساب يوتيوب غير متصل حالياً. يمكنك مزامنته الآن عبر الضغط على الزر أدناه أو لصق ملف التوكن الموحد.
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setCheckingYt(true);
+                      try {
+                        const res = await triggerYoutubeAuth();
+                        if (res.success) {
+                          setSuccessMsg("تم توثيق ومزامنة حساب يوتيوب بنجاح! 🚀");
+                          await loadCurrentSettings();
+                        } else {
+                          setSuccessMsg("تنبيه: " + (res.error || "تعذر إكمال الربط التلقائي"));
+                        }
+                      } catch (e: any) {
+                        setSuccessMsg("تعذر الربط التلقائي — تأكد من عمل السيرفر.");
+                      } finally {
+                        setCheckingYt(false);
+                        setTimeout(() => setSuccessMsg(null), 4000);
+                      }
+                    }}
+                    disabled={checkingYt}
+                    className="px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-700 cursor-pointer disabled:opacity-50 transition-all flex items-center gap-1.5 shadow-md shadow-red-600/20"
+                  >
+                    <YouTubeIcon className="w-3.5 h-3.5 text-white" />
+                    <span>{checkingYt ? "جاري الفحص..." : (settings?.publishing?.youtube_authenticated ? "إعادة فحص / مزامنة التوثيق" : "ربط حساب YouTube الآن")}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowTokenInput(!showTokenInput)}
+                    className="px-3 py-2 rounded-xl text-xs font-semibold text-[#888] hover:text-white bg-[#1f1f1f] hover:bg-[#2a2a2a] transition-all cursor-pointer"
+                  >
+                    {showTokenInput ? "إخفاء إدخال التوكن" : "لصق توكن JSON يدوياً"}
+                  </button>
+                </div>
+
+                {showTokenInput && (
+                  <div className="space-y-1.5 pt-2 border-t border-[#262626]">
+                    <label className="block text-[11px] text-[#aaa] font-semibold">
+                      لصق محتوى youtube_token.json الموحد للسيرفر:
+                    </label>
+                    <textarea
+                      value={ytTokenJson}
+                      onChange={(e) => setYtTokenJson(e.target.value)}
+                      placeholder='{"token": "ya29...", "refresh_token": "1//...", ...}'
+                      rows={3}
+                      className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg p-2 text-[10px] text-zinc-300 font-mono focus:outline-none focus:border-red-600 dir-ltr text-left"
+                    />
+                    <span className="text-[10px] text-[#666] block">
+                      عند الضغط على حفظ التغييرات، سيتم حفظ هذا التوكن على السيرفر ومشاركته مع كافة الأجهزة.
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* TELEGRAM NOTIFICATIONS */}
               <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-xs text-slate-300 space-y-2">
                 <div className="font-bold text-slate-200">📢 تنبيهات تيليجرام للمهام الخلفية</div>
                 <p className="text-[11px] text-slate-400 leading-relaxed">

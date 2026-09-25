@@ -119,29 +119,57 @@ def _get_system_prompt(category: str, tone: str, target_duration_sec: int, custo
 
 def generate_with_gemini(api_key: str, model_name: str, prompt: str, system_prompt: str) -> Dict[str, Any]:
     client = genai.Client(api_key=api_key)
-    try:
-        response = client.models.generate_content(
-            model=model_name or 'gemini-2.5-flash',
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                system_instruction=system_prompt,
-                response_mime_type="application/json",
-                response_schema=VideoScript,
-                temperature=0.75
+    target_model = model_name or "gemini-3.8-flash"
+    if target_model in ("gemini-2.5-flash", "gemini-2.0-flash-exp"):
+        target_model = "gemini-3.8-flash"
+
+    # Multi-model fallback list in case Google deprecates a specific version
+    models_to_try = [target_model]
+    for fallback in ["gemini-3.8-flash", "gemini-2.0-flash", "gemini-1.5-flash"]:
+        if fallback not in models_to_try:
+            models_to_try.append(fallback)
+
+    last_error = None
+    for m in models_to_try:
+        try:
+            response = client.models.generate_content(
+                model=m,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    system_instruction=system_prompt,
+                    response_mime_type="application/json",
+                    response_schema=VideoScript,
+                    temperature=0.75
+                )
             )
-        )
-        return json.loads(response.text)
-    except Exception as e:
-        logger.warning(f"Gemini schema failed, retrying plain json: {e}")
-        response = client.models.generate_content(
-            model=model_name or 'gemini-2.5-flash',
-            contents=f"{system_prompt}\n\n{prompt}\n\nStrictly JSON only.",
-            config=types.GenerateContentConfig(
-                response_mime_type="application/json",
-                temperature=0.75
-            )
-        )
-        return json.loads(response.text)
+            return json.loads(response.text)
+        except Exception as e:
+            err_msg = str(e)
+            if "404" in err_msg or "no longer available" in err_msg or "NOT_FOUND" in err_msg:
+                logger.warning(f"Gemini model '{m}' returned 404/not available. Trying fallback: {e}")
+                last_error = e
+                continue
+            
+            logger.warning(f"Gemini schema mode failed on '{m}', retrying plain JSON: {e}")
+            try:
+                response = client.models.generate_content(
+                    model=m,
+                    contents=f"{system_prompt}\n\n{prompt}\n\nStrictly JSON only.",
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json",
+                        temperature=0.75
+                    )
+                )
+                return json.loads(response.text)
+            except Exception as e2:
+                err_msg2 = str(e2)
+                if "404" in err_msg2 or "no longer available" in err_msg2 or "NOT_FOUND" in err_msg2:
+                    logger.warning(f"Gemini model '{m}' returned 404 on plain JSON retry. Trying next fallback.")
+                    last_error = e2
+                    continue
+                raise e2
+
+    raise last_error or RuntimeError("Failed to generate content with any Gemini model.")
 
 def generate_with_openai_compatible(
     base_url: str,
@@ -201,7 +229,7 @@ def regenerate_single_scene(
         api_key = llm_conf.get("gemini_api_key")
         if not api_key:
             raise ValueError("مفتاح Gemini API غير مسجل في الإعدادات")
-        return generate_with_gemini(api_key, llm_conf.get("model_name", "gemini-2.5-flash"),
+        return generate_with_gemini(api_key, llm_conf.get("model_name", "gemini-3.8-flash"),
                                     "أعد صياغة المشهد الآن.", system_instruction)
 
     model_map = {
@@ -220,7 +248,7 @@ def regenerate_single_scene(
         )
 
     api_key = llm_conf.get("gemini_api_key")
-    return generate_with_gemini(api_key, "gemini-2.5-flash", "أعد صياغة المشهد الآن.", system_instruction)
+    return generate_with_gemini(api_key, "gemini-3.8-flash", "أعد صياغة المشهد الآن.", system_instruction)
 
 
 def generate_script_from_prompt(
@@ -246,7 +274,7 @@ def generate_script_from_prompt(
         api_key = llm_conf.get("gemini_api_key")
         if not api_key:
             raise ValueError("مفتاح Gemini API غير مسجل في الإعدادات")
-        return generate_with_gemini(api_key, llm_conf.get("model_name", "gemini-2.5-flash"), user_query, system_instruction)
+        return generate_with_gemini(api_key, llm_conf.get("model_name", "gemini-3.8-flash"), user_query, system_instruction)
 
     elif provider == "openai":
         api_key = llm_conf.get("openai_api_key")
@@ -289,7 +317,7 @@ def generate_script_from_prompt(
 
     else:
         api_key = llm_conf.get("gemini_api_key")
-        return generate_with_gemini(api_key, "gemini-2.5-flash", user_query, system_instruction)
+        return generate_with_gemini(api_key, "gemini-3.8-flash", user_query, system_instruction)
 
 
 def generate_title_variations(
@@ -318,7 +346,7 @@ def generate_title_variations(
         api_key = llm_conf.get("gemini_api_key")
         if not api_key:
             raise ValueError("مفتاح Gemini API غير مسجل في الإعدادات")
-        return generate_with_gemini(api_key, llm_conf.get("model_name", "gemini-2.5-flash"),
+        return generate_with_gemini(api_key, llm_conf.get("model_name", "gemini-3.8-flash"),
                                     user_query, system_instruction)
 
     model_map = {
@@ -337,4 +365,4 @@ def generate_title_variations(
         )
 
     api_key = llm_conf.get("gemini_api_key")
-    return generate_with_gemini(api_key, "gemini-2.5-flash", user_query, system_instruction)
+    return generate_with_gemini(api_key, "gemini-3.8-flash", user_query, system_instruction)

@@ -109,6 +109,8 @@ export interface PublicSettings {
     has_telegram_token: boolean;
     telegram_token_masked: string;
     telegram_chat_id: string;
+    youtube_authenticated?: boolean;
+    youtube_channel_name?: string | null;
   };
 }
 

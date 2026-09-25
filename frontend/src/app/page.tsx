@@ -1075,17 +1075,22 @@ export default function OsamaStudioDashboard() {
               )}
             </button>
 
-            {/* 4. حساب يوتيوب (YouTube Status) */}
+            {/* 4. حساب يوتيوب الموحد (YouTube Status) */}
             {health?.youtube?.authenticated ? (
-              <span className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-[#1e1e1e] border border-[#333] text-[11px] font-semibold text-[#f1f1f1] shrink-0" title={`قناة يوتيوب: ${health.youtube.channel_name}`}>
+              <button
+                onClick={() => setIsSettingsOpen(true)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-[#1e1e1e] hover:bg-[#282828] border border-[#333] text-[11px] font-semibold text-[#f1f1f1] shrink-0 cursor-pointer transition-all"
+                title={`قناة YouTube الموحدة: ${health.youtube.channel_name} (انقر لفتح الإعدادات)`}
+              >
                 <YouTubeIcon className="w-3.5 h-3.5" />
-                <span className="max-w-[110px] truncate">{health.youtube.channel_name}</span>
-              </span>
+                <span className="max-w-[85px] sm:max-w-[120px] truncate">{health.youtube.channel_name}</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+              </button>
             ) : (
               <button
                 onClick={handleConnectYoutube}
                 disabled={connectingYt}
-                className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-red-600/90 hover:bg-red-600 text-[11px] font-bold text-white transition-all cursor-pointer disabled:opacity-50 shrink-0"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-red-600/90 hover:bg-red-600 text-[11px] font-bold text-white transition-all cursor-pointer disabled:opacity-50 shrink-0"
                 title="ربط حساب يوتيوب للنشر التلقائي"
               >
                 <Link2 className="w-3.5 h-3.5" />
