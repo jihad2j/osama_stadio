@@ -1,37 +1,49 @@
 @echo off
-chcp 65001 >nul
-echo ========================================================
-echo       تثبيت تطبيق Osama Studio على هاتفك الأندرويد
-echo ========================================================
-echo.
-echo 1. تأكد من توصيل هاتفك بالكمبيوتر عبر كابل USB.
-echo 2. تأكد من تفعيل "تصحيح أخطاء USB" (USB Debugging) في الهاتف.
-echo.
+setlocal
 set ADB="%LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe"
 
+echo ========================================================
+echo       Osama Studio - Android APK Installer
+echo ========================================================
+echo.
+
 if not exist %ADB% (
-    echo [خطأ] لم يتم العثور على أداة adb في المسار المعتاد.
+    echo [ERROR] ADB tool was not found at %ADB%
     pause
     exit /b 1
 )
 
-echo [1/2] فحص الأجهزة المتصلة...
+echo Checking connected devices:
 %ADB% devices
 echo.
 
-echo [2/2] جاري تثبيت التطبيق على الهاتف...
+echo Installing Osama_Studio.apk to your phone...
 %ADB% install -r "%~dp0Osama_Studio.apk"
+set RES=%ERRORLEVEL%
 
-if %ERRORLEVEL% EQU 0 (
-    echo.
-    echo ========================================================
-    echo  [نجاح] تم تثبيت تطبيق Osama Studio بنجاح على هاتفك! 🎉
-    echo ========================================================
-    echo جاري تشغيل التطبيق على شاشة الهاتف...
-    %ADB% shell monkey -p com.osamastudio.app -c android.intent.category.LAUNCHER 1 >nul 2>&1
-) else (
-    echo.
-    echo [تنبيه] فشل التثبيت. تأكد من الموافقة على رسالة السماح بتصحيح USB التي تظهر على شاشة هاتفك، ثم أعد المحاولة.
-)
+if %RES% EQU 0 goto :SUCCESS
+goto :FAILED
 
+:SUCCESS
+echo.
+echo ========================================================
+echo  [SUCCESS] Osama Studio installed successfully!
+echo ========================================================
+echo Launching app on your phone...
+%ADB% shell monkey -p com.osamastudio.app -c android.intent.category.LAUNCHER 1 >nul 2>&1
+goto :END
+
+:FAILED
+echo.
+echo ========================================================
+echo  [FAILED] Installation did not succeed.
+echo ========================================================
+echo Please check:
+echo 1. Phone is connected via USB cable.
+echo 2. "USB Debugging" is turned ON in Developer Options.
+echo 3. Look at your phone screen and tap "ALLOW" on the USB prompt.
+goto :END
+
+:END
+echo.
 pause
