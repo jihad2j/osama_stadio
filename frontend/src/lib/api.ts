@@ -1,17 +1,30 @@
-const DEFAULT_SERVER_URL = "https://osama-stadio.onrender.com";
+import { Capacitor } from "@capacitor/core";
+
+export const DEFAULT_SERVER_URL = "https://osama-stadio.onrender.com";
 
 export function getApiBase(): string {
   if (typeof window !== "undefined") {
     const custom = localStorage.getItem("osama_api_url");
-    if (custom) return custom.replace(/\/$/, "");
+    if (custom && custom.trim()) {
+      const trimmed = custom.trim().replace(/\/$/, "");
+      // If running inside native Android/iOS app, localhost/127.0.0.1 is unreachable
+      const isNative = typeof Capacitor !== "undefined" && Capacitor.isNativePlatform();
+      if (isNative && (trimmed.includes("localhost") || trimmed.includes("127.0.0.1"))) {
+        return DEFAULT_SERVER_URL;
+      }
+      return trimmed;
+    }
   }
   return (process.env.NEXT_PUBLIC_API_URL || DEFAULT_SERVER_URL).replace(/\/$/, "");
 }
 
 export function setCustomApiBase(url: string) {
   if (typeof window !== "undefined") {
-    if (!url) localStorage.removeItem("osama_api_url");
-    else localStorage.setItem("osama_api_url", url.trim().replace(/\/$/, ""));
+    if (!url || url.trim() === DEFAULT_SERVER_URL) {
+      localStorage.removeItem("osama_api_url");
+    } else {
+      localStorage.setItem("osama_api_url", url.trim().replace(/\/$/, ""));
+    }
   }
 }
 
@@ -139,9 +152,15 @@ export interface HistoryItem {
 }
 
 export async function fetchHealth(): Promise<HealthStatus> {
-  const res = await fetch(`${API_BASE}/api/health`);
-  if (!res.ok) throw new Error("تعذر الاتصال بالخادم");
-  return res.json();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 12000);
+  try {
+    const res = await fetch(`${API_BASE}/api/health`, { signal: controller.signal });
+    if (!res.ok) throw new Error("تعذر الاتصال بالخادم");
+    return await res.json();
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export async function generateScript(

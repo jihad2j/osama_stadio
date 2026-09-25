@@ -42,10 +42,14 @@ import {
   HelpCircle,
   SlidersHorizontal,
   Palette,
-  Type
+  Type,
+  AlertTriangle
 } from "lucide-react";
 import {
   fetchHealth,
+  getApiBase,
+  setCustomApiBase,
+  DEFAULT_SERVER_URL,
   generateScript,
   triggerRender,
   getTaskStatus,
@@ -192,6 +196,7 @@ export default function OsamaStudioDashboard() {
   const [step, setStep] = useState<"input" | "review" | "rendering" | "preview" | "published" | "history" | "queue" | "autopilot">("input");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [health, setHealth] = useState<HealthStatus | null>(null);
+  const [serverState, setServerState] = useState<"checking" | "connected" | "error">("checking");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -589,11 +594,14 @@ export default function OsamaStudioDashboard() {
   }, [queueItems]);
 
   const checkServerHealth = async () => {
+    setServerState("checking");
     try {
       const data = await fetchHealth();
       setHealth(data);
-    } catch {
-      console.warn("Backend offline or booting...");
+      setServerState("connected");
+    } catch (err) {
+      console.warn("Backend offline or booting...", err);
+      setServerState("error");
     }
   };
 
@@ -926,12 +934,48 @@ export default function OsamaStudioDashboard() {
               <span className="text-white font-black text-xs sm:text-sm tracking-tighter">OS</span>
             </div>
             <div>
-              <h1 className="font-extrabold text-sm sm:text-lg tracking-tight flex items-center gap-1.5 sm:gap-2">
+              <h1 className="font-extrabold text-sm sm:text-lg tracking-tight flex items-center gap-1.5 sm:gap-2 flex-wrap">
                 <span className="text-white font-black tracking-tight">Osama Studio</span>
-                <span className="text-[10px] sm:text-xs bg-red-600/20 text-red-400 border border-red-600/30 px-1.5 sm:px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                <span className="text-[10px] sm:text-xs bg-red-600/20 text-red-400 border border-red-600/30 px-1.5 sm:px-2 py-0.5 rounded-full font-bold">
                   استوديو أسامة
                 </span>
+                
+                {/* Real-time Server Connection Indicator */}
+                <button
+                  type="button"
+                  onClick={() => setIsSettingsOpen(true)}
+                  className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold transition-all border cursor-pointer ${
+                    serverState === "connected"
+                      ? "bg-emerald-950/40 border-emerald-500/30 text-emerald-400 hover:bg-emerald-950/60"
+                      : serverState === "checking"
+                      ? "bg-amber-950/40 border-amber-500/30 text-amber-400 hover:bg-amber-950/60"
+                      : "bg-red-950/40 border-red-500/30 text-red-400 hover:bg-red-950/60"
+                  }`}
+                  title={
+                    serverState === "connected"
+                      ? "السيرفر متصل بنجاح - انقر لفتح الإعدادات"
+                      : serverState === "checking"
+                      ? "جاري فحص الاتصال بالسيرفر..."
+                      : "السيرفر غير متصل - انقر لضبط الرابط أو إعادة المحاولة"
+                  }
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      serverState === "connected"
+                        ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]"
+                        : serverState === "checking"
+                        ? "bg-amber-400 animate-ping"
+                        : "bg-red-500 animate-pulse"
+                    }`}
+                  />
+                  <span>
+                    {serverState === "connected"
+                      ? "السيرفر متصل"
+                      : serverState === "checking"
+                      ? "فحص السيرفر..."
+                      : "السيرفر غير متصل ⚙️"}
+                  </span>
+                </button>
               </h1>
               <p className="text-[10px] sm:text-xs text-[#aaa] hidden sm:flex items-center gap-1.5">
                 <span>استوديو الإنتاج الذكي</span>
@@ -1077,6 +1121,39 @@ export default function OsamaStudioDashboard() {
           </div>
         )}
       </header>
+
+      {/* Offline Alert Banner */}
+      {serverState === "error" && (
+        <div className="bg-gradient-to-r from-red-950/90 via-[#1c0808] to-red-950/90 border-b border-red-600/30 px-3 sm:px-6 py-2.5 text-xs text-red-200">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-right">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" />
+              <span>
+                تعذر الاتصال بسيرفر الباك اند: <strong className="font-mono text-red-300 dir-ltr inline-block px-1 bg-black/40 rounded">{getApiBase()}</strong>
+              </span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={async () => {
+                  setCustomApiBase(DEFAULT_SERVER_URL);
+                  await checkServerHealth();
+                }}
+                className="px-3 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold text-[11px] transition-all cursor-pointer shadow-md shadow-red-600/30"
+              >
+                التحويل لسيرفر Render السحابي 🌐
+              </button>
+              <button
+                type="button"
+                onClick={() => checkServerHealth()}
+                className="px-3 py-1 rounded-lg bg-[#272727] hover:bg-[#3f3f3f] text-[#f1f1f1] font-semibold text-[11px] transition-all cursor-pointer"
+              >
+                إعادة المحاولة 🔄
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Stepper Navigation (Visible in workflow steps) */}
       {step !== "history" && (
@@ -2046,11 +2123,11 @@ export default function OsamaStudioDashboard() {
         {/* STEP: VIDEO HISTORY LIBRARY */}
         {step === "history" && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="min-w-0">
                 <h2 className="text-lg sm:text-2xl font-extrabold text-white flex items-center gap-2">
-                  <Folder className="w-5 h-5 text-indigo-400" />
-                  <span>سجل الفيديوهات المنتجة ({historyItems.length})</span>
+                  <Folder className="w-5 h-5 text-indigo-400 shrink-0" />
+                  <span className="truncate">سجل الفيديوهات المنتجة ({historyItems.length})</span>
                 </h2>
                 <p className="text-xs text-slate-400">جميع الفيديوهات التي تم إنشاؤها مسبقاً مع إمكانية المعاينة والتحميل والنشر</p>
                 <div className="flex items-center gap-1.5 mt-2 flex-wrap">
@@ -2066,7 +2143,7 @@ export default function OsamaStudioDashboard() {
                   ))}
                 </div>
                 {storage && (
-                  <div className="flex items-center gap-2 mt-1.5 text-[10px] text-slate-400">
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-1.5 text-[10px] text-slate-400">
                     <span className="bg-slate-900 border border-slate-800 px-2 py-0.5 rounded-full">
                       💾 المخرجات {storage.output_mb}MB • المؤقت {storage.temp_mb}MB • {storage.videos} فيديو
                     </span>
@@ -2128,11 +2205,11 @@ export default function OsamaStudioDashboard() {
                 )}
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
                 <button
                   onClick={handleRefreshStats}
                   disabled={loadingStats}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-emerald-300 bg-emerald-600/15 hover:bg-emerald-600/30 border border-emerald-500/40 flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-all"
+                  className="flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold text-emerald-300 bg-emerald-600/15 hover:bg-emerald-600/30 border border-emerald-500/40 flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 transition-all"
                   title="جلب المشاهدات والإعجابات من يوتيوب"
                 >
                   <TrendingUp className="w-3.5 h-3.5" />
@@ -2140,7 +2217,7 @@ export default function OsamaStudioDashboard() {
                 </button>
                 <button
                   onClick={() => setStep("input")}
-                  className="gradient-btn px-4 py-2 rounded-xl text-xs font-bold text-white flex items-center gap-1.5 shadow-md cursor-pointer"
+                  className="flex-1 sm:flex-none gradient-btn px-4 py-2 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-1.5 shadow-md cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>فيديو جديد</span>
@@ -2179,7 +2256,7 @@ export default function OsamaStudioDashboard() {
                     className="w-full bg-slate-900 border border-slate-700 rounded-xl pr-9 pl-3 py-2 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 placeholder:text-slate-500"
                   />
                 </div>
-                <div className="flex items-center gap-1.5">
+                <div className="flex flex-wrap items-center gap-1.5">
                   {(["all", "published", "ready"] as const).map((f) => (
                     <button
                       key={f}
@@ -2211,7 +2288,7 @@ export default function OsamaStudioDashboard() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {orderedHistory.map((item, i) => (
                   <div key={item.video_id} className={`history-card glass-panel rounded-2xl overflow-hidden border border-slate-800 flex flex-col justify-between animate-fade-up stagger-${Math.min(i % 4 + 1, 4)}`}>
-                    <div className="relative aspect-[9/16] max-h-[300px] bg-black overflow-hidden flex items-center justify-center">
+                    <div className="relative aspect-[9/16] max-h-[320px] w-full max-w-[250px] mx-auto sm:max-w-none bg-black overflow-hidden flex items-center justify-center">
                       <video
                         src={getVideoMediaUrl(item.video_id)}
                         poster={getVideoThumbUrl(item.video_id)}
@@ -2234,9 +2311,9 @@ export default function OsamaStudioDashboard() {
                         <h4 className="font-bold text-xs sm:text-sm text-white line-clamp-2">{item.title}</h4>
                       </div>
 
-                      <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2">
+                      <div className="pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-x-2 gap-y-2">
                         {item.published_url ? (
-                          <div className="space-y-1">
+                          <div className="space-y-1 min-w-0">
                             <a
                               href={item.published_url}
                               target="_blank"
@@ -2263,7 +2340,7 @@ export default function OsamaStudioDashboard() {
                           </span>
                         )}
 
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
                           {item.scenes && item.scenes.length > 0 && (
                             <button
                               onClick={() => handleReuseHistory(item)}

@@ -17,8 +17,10 @@ import {
   Send,
   Server,
   Radio,
+  Globe,
+  Laptop,
 } from "lucide-react";
-import { fetchSettings, updateSettings, testNotify, PublicSettings, getApiBase, setCustomApiBase, fetchHealth } from "@/lib/api";
+import { fetchSettings, updateSettings, testNotify, PublicSettings, getApiBase, setCustomApiBase, fetchHealth, DEFAULT_SERVER_URL } from "@/lib/api";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -87,10 +89,13 @@ export default function SettingsModal({ isOpen, onClose, onSettingsSaved }: Sett
     setServerStatus(null);
     try {
       if (backendUrl) setCustomApiBase(backendUrl);
+      const startTime = Date.now();
       const h = await fetchHealth();
-      setServerStatus(`✅ متصل بنجاح بالسيرفر! حالة الخدمة: ${h.status} (FFmpeg: ${h.ffmpeg ? "متوفر ومثبت" : "غير مثبت"})`);
+      const latency = Date.now() - startTime;
+      const ytInfo = h.youtube?.authenticated ? `قناة يوتيوب: ${h.youtube.channel_name} ✓` : "يوتيوب: غير مرتبط";
+      setServerStatus(`✅ متصل بنجاح بالسيرفر (${latency}ms)! حالة الباك اند: ${h.status} | FFmpeg: ${h.ffmpeg ? "مثبت ✓" : "غير مثبت ✗"} | ${ytInfo}`);
     } catch (err: any) {
-      setServerStatus(`❌ تعذر الاتصال بالسيرفر: تأكد من صحة الرابط وعمل خادم الباك اند.`);
+      setServerStatus(`❌ تعذر الاتصال بالسيرفر (${backendUrl || getApiBase()}): تأكد من صحة الرابط أو انتظر ثوانٍ لإيقاظ خادم Render (Cold Start).`);
     } finally {
       setTestingServer(false);
     }
@@ -615,54 +620,94 @@ export default function SettingsModal({ isOpen, onClose, onSettingsSaved }: Sett
               <div className="p-4 rounded-xl bg-[#161616] border border-[#272727] text-xs text-[#aaa] space-y-2">
                 <div className="font-bold text-white flex items-center gap-2">
                   <Server className="w-4 h-4 text-red-500" />
-                  <span>ربط السيرفر وخدمة Render Cloud</span>
+                  <span>إعدادات وخوادم Osama Studio</span>
                 </div>
                 <p className="text-[11px] text-[#717171] leading-relaxed">
-                  عند رفع المشروع على منصة <span className="text-white font-semibold">Render</span>، يمكنك إدخال رابط خدمة الباك اند (FastAPI) هنا وسيتصل التطبيق به تلقائياً وبشكل فوري دون الحاجة لإعادة بناء الفرونت اند.
+                  يمكنك التبديل بين سيرفر Render السحابي الجاهز المرفوع أونلاين، أو سيرفر محلي (Localhost) إذا كنت تشغل الباك اند على جهازك.
                 </p>
               </div>
 
-              <div className="space-y-3 p-4 rounded-xl bg-[#1a1a1a] border border-[#272727]">
+              <div className="space-y-4 p-4 rounded-xl bg-[#1a1a1a] border border-[#272727]">
                 <div>
                   <label className="block text-xs font-semibold text-[#f1f1f1] mb-1.5 flex items-center justify-between">
                     <span>رابط سيرفر الباك اند (Backend URL):</span>
-                    <span className="text-[10px] text-[#717171] font-mono">Render or Local</span>
+                    <span className="text-[10px] text-emerald-400 font-mono">النشط: {getApiBase()}</span>
                   </label>
                   <input
                     type="url"
                     value={backendUrl}
                     onChange={(e) => setBackendUrl(e.target.value)}
-                    placeholder="https://osama-studio-backend.onrender.com"
+                    placeholder={DEFAULT_SERVER_URL}
                     className="w-full bg-[#0f0f0f] border border-[#3f3f3f] rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-red-600 font-mono dir-ltr text-left"
                   />
-                  <p className="text-[11px] text-[#717171] mt-1.5 flex items-center justify-between">
-                    <span>القيمة الافتراضية: http://localhost:8000</span>
+                </div>
+
+                {/* Quick Presets */}
+                <div>
+                  <span className="block text-[11px] text-[#aaa] mb-2 font-semibold">اختر السيرفر بضغطة زر:</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <button
                       type="button"
-                      onClick={() => setBackendUrl("http://localhost:8000")}
-                      className="text-red-400 hover:underline cursor-pointer"
+                      onClick={() => {
+                        setBackendUrl(DEFAULT_SERVER_URL);
+                        setCustomApiBase(DEFAULT_SERVER_URL);
+                      }}
+                      className={`p-2.5 rounded-lg border text-right transition-all cursor-pointer flex flex-col gap-1 ${
+                        backendUrl === DEFAULT_SERVER_URL || (!backendUrl && getApiBase() === DEFAULT_SERVER_URL)
+                          ? "bg-red-600/15 border-red-500/60 text-white"
+                          : "bg-[#111] border-[#2e2e2e] text-[#aaa] hover:bg-[#1a1a1a] hover:text-white"
+                      }`}
                     >
-                      استعادة المحلي
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                          <Globe className="w-3.5 h-3.5 text-red-500" />
+                          <span>سيرفر Render السحابي</span>
+                        </span>
+                        <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.2 rounded font-mono">الافتراضي</span>
+                      </div>
+                      <span className="text-[10px] font-mono text-[#888] truncate dir-ltr text-left">{DEFAULT_SERVER_URL}</span>
                     </button>
-                  </p>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBackendUrl("http://localhost:8000");
+                        setCustomApiBase("http://localhost:8000");
+                      }}
+                      className={`p-2.5 rounded-lg border text-right transition-all cursor-pointer flex flex-col gap-1 ${
+                        backendUrl === "http://localhost:8000"
+                          ? "bg-red-600/15 border-red-500/60 text-white"
+                          : "bg-[#111] border-[#2e2e2e] text-[#aaa] hover:bg-[#1a1a1a] hover:text-white"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                          <Laptop className="w-3.5 h-3.5 text-blue-400" />
+                          <span>سيرفر محلي (Localhost)</span>
+                        </span>
+                        <span className="text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.2 rounded font-mono">للمطورين</span>
+                      </div>
+                      <span className="text-[10px] font-mono text-[#888] truncate dir-ltr text-left">http://localhost:8000</span>
+                    </button>
+                  </div>
                 </div>
 
                 {serverStatus && (
-                  <div className={`p-3 rounded-xl border text-xs ${
+                  <div className={`p-3 rounded-xl border text-xs leading-relaxed ${
                     serverStatus.includes("✅") 
-                      ? "bg-green-950/30 border-green-800/50 text-green-400" 
-                      : "bg-red-950/30 border-red-800/50 text-red-400"
+                      ? "bg-green-950/30 border-green-800/50 text-green-300" 
+                      : "bg-red-950/30 border-red-800/50 text-red-300"
                   }`}>
                     {serverStatus}
                   </div>
                 )}
 
-                <div className="pt-2">
+                <div className="pt-1 flex items-center gap-2">
                   <button
                     type="button"
                     onClick={handleTestServer}
                     disabled={testingServer}
-                    className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#272727] hover:bg-[#3f3f3f] border border-[#3f3f3f] cursor-pointer disabled:opacity-50 transition-all flex items-center gap-2"
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-700 cursor-pointer disabled:opacity-50 transition-all flex items-center gap-2 shadow-lg shadow-red-600/20"
                   >
                     {testingServer ? (
                       <>
@@ -671,8 +716,8 @@ export default function SettingsModal({ isOpen, onClose, onSettingsSaved }: Sett
                       </>
                     ) : (
                       <>
-                        <Radio className="w-3.5 h-3.5 text-red-500" />
-                        <span>فحص الاتصال بالسيرفر</span>
+                        <Radio className="w-3.5 h-3.5" />
+                        <span>فحص الاتصال بالسيرفر الآن 🚀</span>
                       </>
                     )}
                   </button>
