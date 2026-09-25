@@ -1,9 +1,11 @@
+const DEFAULT_SERVER_URL = "https://osama-stadio.onrender.com";
+
 export function getApiBase(): string {
   if (typeof window !== "undefined") {
     const custom = localStorage.getItem("osama_api_url");
     if (custom) return custom.replace(/\/$/, "");
   }
-  return (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "");
+  return (process.env.NEXT_PUBLIC_API_URL || DEFAULT_SERVER_URL).replace(/\/$/, "");
 }
 
 export function setCustomApiBase(url: string) {
