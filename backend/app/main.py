@@ -144,6 +144,16 @@ def _cleanup_workdir(task_id: str) -> float:
 
 # ----------------- Endpoints -----------------
 
+@app.get("/")
+def root():
+    return {
+        "name": "Osama Studio API",
+        "status": "online",
+        "version": "1.0.0",
+        "docs": "/docs",
+        "health": "/api/health"
+    }
+
 @app.get("/api/health")
 def health_check():
     youtube_status = check_youtube_auth_status()
