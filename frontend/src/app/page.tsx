@@ -102,6 +102,17 @@ function YouTubeIcon({ className = "w-5 h-5 text-red-500" }: { className?: strin
 
 const NICHES = [
   {
+    id: "google_veo",
+    title: "Google Veo سينمائي 🌟",
+    subtitle: "توليد فيديو حقيقي ذكاء اصطناعي (اشتراك Pro)",
+    icon: Sparkles,
+    color: "from-amber-500 via-red-600 to-purple-700",
+    badgeColor: "bg-purple-500/20 text-purple-300 border-purple-500/40",
+    defaultPrompt: "مشهد سينمائي واقعي مذهل لسيارة خارقة تسير في شوارع طوكيو ليلاً مع انعكاس أضواء النيون والمطر بدقة 4K",
+    defaultTone: "حماسي ومليء بالإثارة",
+    visualMode: "veo_ai"
+  },
+  {
     id: "real_cars",
     title: "سيارات حقيقية 🏎️",
     subtitle: "سباقات وسيارات حقيقية بمشاهد واقعية",
@@ -1303,6 +1314,7 @@ export default function OsamaStudioDashboard() {
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                   {[
+                    { id: "veo_ai", label: "🌟 Google Veo (فيديو سينمائي بالذكاء الاصطناعي)", sub: "توليد فيديو حقيقي 9:16 عبر اشتراك Google AI Pro", tag: "Google Veo" },
                     { id: "auto_real", label: "🏎️ سيارات حقيقية (ستوك + AI واقعي)", sub: "فيديو حقيقي أولاً ثم توليد واقعي — الأفضل للسيارات", tag: "موصى به للسيارات" },
                     { id: "real_stock", label: "🎥 ستوك حقيقي فقط (Pexels/Pixabay)", sub: "مقاطع واقعية حقيقية 1080p بدون توليد", tag: "واقعي" },
                     { id: "ai_realistic", label: "📸 توليد واقعي AI (بدون مفاتيح)", sub: "صور واقعية متحركة بحركة سينمائية", tag: "واقعي" },
@@ -1334,6 +1346,14 @@ export default function OsamaStudioDashboard() {
                     </button>
                   ))}
                 </div>
+                {visualMode === "veo_ai" && (
+                  <div className="mt-2 p-2.5 rounded-xl bg-purple-950/40 border border-purple-800/50 text-[11px] text-purple-200 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-purple-400 shrink-0" />
+                    <span>
+                      🌟 وضع Google Veo مفعل: يتم توليد مشاهد الفيديو بالكامل عبر نموذج Veo المتطور باستخدام مفتاح Gemini API نفسه واشتراكك في Google AI Pro.
+                    </span>
+                  </div>
+                )}
                 {visualMode === "real_stock" && health && !health.has_pexels && (
                   <div className="mt-2 p-2.5 rounded-xl bg-amber-950/40 border border-amber-800/50 text-[11px] text-amber-200">
                     ⚠️ مفتاح Pexels غير مربوط — سيُحاول Pixabay ثم التوليد الواقعي تلقائياً حتى لا يتوقف الإنتاج. اربط المفتاح من الإعدادات لأفضل نتائج ستوك.

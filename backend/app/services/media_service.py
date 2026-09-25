@@ -307,6 +307,90 @@ def _resolve_style(visual_mode: str, category: str) -> str:
     return "realistic"
 
 
+def _sync_veo_generate(api_key: str, prompt_text: str, out_path: str) -> bool:
+    import time
+    try:
+        from google import genai
+        from google.genai import types
+        client = genai.Client(api_key=api_key)
+        
+        # Candidate Veo models in order of preferred release
+        models_to_try = [
+            "veo-3.1-generate-001",
+            "veo-2.0-generate-001",
+            "veo-3.1-fast-generate-001",
+            "veo-2.0-generate-preview",
+            "veo-3.1-generate-preview",
+        ]
+        
+        last_error = None
+        for model_name in models_to_try:
+            try:
+                logger.info(f"Triggering Google Veo video generation with model '{model_name}' for prompt: '{prompt_text[:60]}...'")
+                operation = client.models.generate_videos(
+                    model=model_name,
+                    prompt=prompt_text,
+                    config=types.GenerateVideosConfig(
+                        aspect_ratio="9:16",
+                    ),
+                )
+                
+                # Poll with safety timeout (max 180s)
+                poll_elapsed = 0
+                while not operation.done and poll_elapsed < 180:
+                    time.sleep(10)
+                    poll_elapsed += 10
+                    operation = client.operations.get(operation)
+                    logger.info(f"Google Veo [{model_name}] waiting... ({poll_elapsed}s elapsed)")
+                
+                if not operation.done:
+                    logger.warning(f"Google Veo [{model_name}] timed out after {poll_elapsed}s.")
+                    continue
+                
+                resp = getattr(operation, "response", None) or getattr(operation, "result", None)
+                if resp and getattr(resp, "generated_videos", None) and len(resp.generated_videos) > 0:
+                    gen_video = resp.generated_videos[0]
+                    client.files.download(file=gen_video.video)
+                    gen_video.video.save(out_path)
+                    if Path(out_path).exists() and Path(out_path).stat().st_size > 1000:
+                        logger.info(f"Google Veo video generated successfully at {out_path} ({Path(out_path).stat().st_size} bytes)")
+                        return True
+            except Exception as e:
+                logger.warning(f"Google Veo attempt with model '{model_name}' failed: {e}")
+                last_error = e
+                continue
+                
+        logger.error(f"All Google Veo models failed. Last error: {last_error}")
+        return False
+    except Exception as e:
+        logger.error(f"Veo client setup error: {e}")
+        return False
+
+
+async def generate_veo_video(
+    prompt: str,
+    output_video_path: str,
+    api_key: Optional[str] = None
+) -> Optional[str]:
+    """
+    Generate vertical 9:16 video using Google Veo with user's Gemini API key.
+    """
+    import asyncio
+    settings = load_settings()
+    llm_conf = settings.get("llm", {})
+    from app.config import GEMINI_API_KEY
+    key = api_key or llm_conf.get("gemini_api_key") or GEMINI_API_KEY
+    if not key:
+        logger.warning("No Gemini API key found for Google Veo generation.")
+        return None
+        
+    loop = asyncio.get_running_loop()
+    success = await loop.run_in_executor(None, _sync_veo_generate, key, prompt, output_video_path)
+    if success and Path(output_video_path).exists() and Path(output_video_path).stat().st_size > 1000:
+        return output_video_path
+    return None
+
+
 async def fetch_media_for_scene(
     query: str,
     output_path: str,
@@ -317,6 +401,7 @@ async def fetch_media_for_scene(
 ) -> Optional[str]:
     """
     جلب مرئيات المشهد — كل الخيارات متاحة:
+      - "veo_ai":       Google Veo فيديو سينمائي حقيقي بالذكاء الاصطناعي (باستخدام مفتاح Gemini Pro)
       - "ai_cartoon":   كرتون 3D للأطفال (مباشرة بالذكاء الاصطناعي)
       - "ai_cinematic": لوحات سينمائية للقصص
       - "real_stock":   فيديو ستوك حقيقي فقط (Pexels ثم Pixabay + بحث موسّع)
@@ -324,6 +409,14 @@ async def fetch_media_for_scene(
       - "auto_real":    ستوك حقيقي أولاً ثم AI واقعي — موصى به للسيارات الحقيقية
       - "auto":         ذكي حسب الفئة (أطفال -> كرتون، سيارات حقيقية/قصص -> واقعي)
     """
+    # 0. Google Veo Mode — Generative Video directly via Gemini Pro API
+    if visual_mode == "veo_ai":
+        logger.info(f"Using Google Veo for scene generation: '{query}'")
+        veo_res = await generate_veo_video(prompt=query, output_video_path=output_path)
+        if veo_res:
+            return veo_res
+        logger.warning("Google Veo unavailable or quota reached; falling back to high-quality visual pipeline.")
+
     settings = load_settings()
     media_conf = settings.get("media", {})
     style = _resolve_style(visual_mode, category)
