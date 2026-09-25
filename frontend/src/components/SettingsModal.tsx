@@ -14,9 +14,11 @@ import {
   ShieldCheck,
   RefreshCw,
   Sparkles,
-  Send
+  Send,
+  Server,
+  Radio,
 } from "lucide-react";
-import { fetchSettings, updateSettings, testNotify, PublicSettings } from "@/lib/api";
+import { fetchSettings, updateSettings, testNotify, PublicSettings, getApiBase, setCustomApiBase, fetchHealth } from "@/lib/api";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -25,12 +27,15 @@ interface SettingsModalProps {
 }
 
 export default function SettingsModal({ isOpen, onClose, onSettingsSaved }: SettingsModalProps) {
-  const [activeTab, setActiveTab] = useState<"llm" | "voice" | "media" | "publishing">("llm");
+  const [activeTab, setActiveTab] = useState<"llm" | "voice" | "media" | "publishing" | "server">("llm");
   const [settings, setSettings] = useState<PublicSettings | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [testingNotify, setTestingNotify] = useState(false);
+  const [backendUrl, setBackendUrl] = useState("");
+  const [testingServer, setTestingServer] = useState(false);
+  const [serverStatus, setServerStatus] = useState<string | null>(null);
 
   // Form Fields
   const [llmProvider, setLlmProvider] = useState<string>("gemini");
@@ -60,6 +65,7 @@ export default function SettingsModal({ isOpen, onClose, onSettingsSaved }: Sett
 
   const loadCurrentSettings = async () => {
     setLoading(true);
+    setBackendUrl(getApiBase());
     try {
       const data = await fetchSettings();
       setSettings(data);
@@ -76,10 +82,28 @@ export default function SettingsModal({ isOpen, onClose, onSettingsSaved }: Sett
     }
   };
 
+  const handleTestServer = async () => {
+    setTestingServer(true);
+    setServerStatus(null);
+    try {
+      if (backendUrl) setCustomApiBase(backendUrl);
+      const h = await fetchHealth();
+      setServerStatus(`✅ متصل بنجاح بالسيرفر! حالة الخدمة: ${h.status} (FFmpeg: ${h.ffmpeg ? "متوفر ومثبت" : "غير مثبت"})`);
+    } catch (err: any) {
+      setServerStatus(`❌ تعذر الاتصال بالسيرفر: تأكد من صحة الرابط وعمل خادم الباك اند.`);
+    } finally {
+      setTestingServer(false);
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     setSuccessMsg(null);
+
+    if (backendUrl) {
+      setCustomApiBase(backendUrl);
+    }
 
     const payload: Record<string, any> = {
       llm: {
@@ -196,6 +220,18 @@ export default function SettingsModal({ isOpen, onClose, onSettingsSaved }: Sett
           >
             <Send className="w-4 h-4" />
             <span>4. النشر والتنبيهات</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("server")}
+            className={`flex items-center gap-2 px-4 py-2.5 border-b-2 transition-all ${
+              activeTab === "server"
+                ? "border-white text-white"
+                : "border-transparent text-[#717171] hover:text-[#aaa]"
+            }`}
+          >
+            <Server className="w-4 h-4" />
+            <span>5. خادم Render / API</span>
           </button>
         </div>
 
@@ -569,6 +605,78 @@ export default function SettingsModal({ isOpen, onClose, onSettingsSaved }: Sett
                 >
                   {testingNotify ? "جاري الإرسال..." : "📨 إرسال رسالة اختبار"}
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 5: BACKEND SERVER & RENDER CONFIGURATION */}
+          {activeTab === "server" && (
+            <div className="space-y-4">
+              <div className="p-4 rounded-xl bg-[#161616] border border-[#272727] text-xs text-[#aaa] space-y-2">
+                <div className="font-bold text-white flex items-center gap-2">
+                  <Server className="w-4 h-4 text-red-500" />
+                  <span>ربط السيرفر وخدمة Render Cloud</span>
+                </div>
+                <p className="text-[11px] text-[#717171] leading-relaxed">
+                  عند رفع المشروع على منصة <span className="text-white font-semibold">Render</span>، يمكنك إدخال رابط خدمة الباك اند (FastAPI) هنا وسيتصل التطبيق به تلقائياً وبشكل فوري دون الحاجة لإعادة بناء الفرونت اند.
+                </p>
+              </div>
+
+              <div className="space-y-3 p-4 rounded-xl bg-[#1a1a1a] border border-[#272727]">
+                <div>
+                  <label className="block text-xs font-semibold text-[#f1f1f1] mb-1.5 flex items-center justify-between">
+                    <span>رابط سيرفر الباك اند (Backend URL):</span>
+                    <span className="text-[10px] text-[#717171] font-mono">Render or Local</span>
+                  </label>
+                  <input
+                    type="url"
+                    value={backendUrl}
+                    onChange={(e) => setBackendUrl(e.target.value)}
+                    placeholder="https://osama-studio-backend.onrender.com"
+                    className="w-full bg-[#0f0f0f] border border-[#3f3f3f] rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-red-600 font-mono dir-ltr text-left"
+                  />
+                  <p className="text-[11px] text-[#717171] mt-1.5 flex items-center justify-between">
+                    <span>القيمة الافتراضية: http://localhost:8000</span>
+                    <button
+                      type="button"
+                      onClick={() => setBackendUrl("http://localhost:8000")}
+                      className="text-red-400 hover:underline cursor-pointer"
+                    >
+                      استعادة المحلي
+                    </button>
+                  </p>
+                </div>
+
+                {serverStatus && (
+                  <div className={`p-3 rounded-xl border text-xs ${
+                    serverStatus.includes("✅") 
+                      ? "bg-green-950/30 border-green-800/50 text-green-400" 
+                      : "bg-red-950/30 border-red-800/50 text-red-400"
+                  }`}>
+                    {serverStatus}
+                  </div>
+                )}
+
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={handleTestServer}
+                    disabled={testingServer}
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#272727] hover:bg-[#3f3f3f] border border-[#3f3f3f] cursor-pointer disabled:opacity-50 transition-all flex items-center gap-2"
+                  >
+                    {testingServer ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>جاري فحص الاتصال...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Radio className="w-3.5 h-3.5 text-red-500" />
+                        <span>فحص الاتصال بالسيرفر</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           )}

@@ -25,7 +25,7 @@ from app.services.settings_service import get_public_settings, save_settings, lo
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="ContentFlow - Shorts Automation Engine", version="1.0.0")
+app = FastAPI(title="Osama Studio - Shorts Automation Engine", version="1.0.0")
 
 # Enable CORS for Next.js frontend (local and production)
 app.add_middleware(

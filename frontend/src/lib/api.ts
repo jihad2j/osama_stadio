@@ -1,4 +1,23 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+export function getApiBase(): string {
+  if (typeof window !== "undefined") {
+    const custom = localStorage.getItem("osama_api_url");
+    if (custom) return custom.replace(/\/$/, "");
+  }
+  return (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "");
+}
+
+export function setCustomApiBase(url: string) {
+  if (typeof window !== "undefined") {
+    if (!url) localStorage.removeItem("osama_api_url");
+    else localStorage.setItem("osama_api_url", url.trim().replace(/\/$/, ""));
+  }
+}
+
+export const API_BASE = {
+  toString() {
+    return getApiBase();
+  },
+};
 
 export interface Scene {
   scene_number: number;
