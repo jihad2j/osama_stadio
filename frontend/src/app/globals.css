@@ -1,0 +1,369 @@
+@import "tailwindcss";
+
+:root {
+  --yt-bg: #0f0f0f;
+  --yt-surface: #272727;
+  --yt-surface-hover: #3f3f3f;
+  --yt-surface-light: #1a1a1a;
+  --yt-red: #ff0000;
+  --yt-red-hover: #cc0000;
+  --yt-red-glow: rgba(255, 0, 0, 0.15);
+  --yt-blue: #3ea6ff;
+  --yt-blue-dim: rgba(62, 166, 255, 0.15);
+  --yt-text: #f1f1f1;
+  --yt-text-secondary: #aaaaaa;
+  --yt-text-muted: #717171;
+  --yt-border: #3f3f3f;
+  --yt-border-dim: #272727;
+  --yt-green: #2ba640;
+  --yt-green-dim: rgba(43, 166, 64, 0.15);
+  --yt-chip-bg: #272727;
+  --yt-chip-active: #f1f1f1;
+  --yt-chip-active-text: #0f0f0f;
+}
+
+body {
+  background-color: var(--yt-bg);
+  color: var(--yt-text);
+  font-family: 'Tajawal', 'Roboto', 'Plus Jakarta Sans', sans-serif;
+  direction: rtl;
+  min-height: 100vh;
+}
+
+/* ==================== YouTube-style Panels ==================== */
+.glass-panel {
+  background: var(--yt-surface-light);
+  border: 1px solid var(--yt-border-dim);
+  border-radius: 12px;
+}
+
+.glass-panel-glow {
+  background: var(--yt-surface-light);
+  border: 1px solid var(--yt-border);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
+  border-radius: 12px;
+}
+
+/* ==================== YouTube Text Gradient ==================== */
+.text-gradient {
+  background: linear-gradient(135deg, var(--yt-red) 0%, #ff4e45 50%, #ff6b6b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ==================== YouTube-style Buttons ==================== */
+.gradient-btn {
+  background: var(--yt-red);
+  transition: all 0.2s ease;
+  border-radius: 9999px;
+}
+
+.gradient-btn:hover {
+  background: var(--yt-red-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(255, 0, 0, 0.3);
+}
+
+.gradient-btn:disabled {
+  opacity: 0.5;
+  transform: none;
+  box-shadow: none;
+}
+
+/* ==================== Custom scrollbars ==================== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--yt-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--yt-border);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--yt-surface-hover);
+}
+
+/* ==================== Motion & Animations ==================== */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes float-slow {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(20px, -15px) scale(1.04); }
+}
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+@keyframes pop-in {
+  0% { opacity: 0; transform: scale(0.7); }
+  60% { opacity: 1; transform: scale(1.05); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.4); }
+  70% { box-shadow: 0 0 0 14px rgba(255, 0, 0, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); }
+}
+@keyframes spin-slow {
+  to { transform: rotate(360deg); }
+}
+@keyframes yt-shine {
+  0% { left: -100%; }
+  50%, 100% { left: 100%; }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-pop-in {
+  animation: pop-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-pulse-ring {
+  animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+.stagger-1 { animation-delay: 0.04s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.16s; }
+.stagger-4 { animation-delay: 0.22s; }
+
+/* ==================== Ambient Background ==================== */
+.bg-orb {
+  position: fixed;
+  border-radius: 9999px;
+  filter: blur(120px);
+  pointer-events: none;
+  z-index: 0;
+  animation: float-slow 18s ease-in-out infinite;
+  opacity: 0.5;
+}
+.bg-grid {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 50px 50px;
+  mask-image: radial-gradient(ellipse 80% 50% at 50% 0%, black 20%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 50% at 50% 0%, black 20%, transparent 70%);
+}
+
+/* ==================== YouTube-style Cards ==================== */
+.select-card {
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+.select-card:hover {
+  transform: translateY(-2px);
+  background: var(--yt-surface) !important;
+}
+.select-card-selected {
+  box-shadow: 0 0 0 2px var(--yt-red), 0 4px 12px rgba(255, 0, 0, 0.15);
+}
+
+/* ==================== YouTube-style Shine Button ==================== */
+.btn-shine {
+  position: relative;
+  overflow: hidden;
+}
+.btn-shine::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+  animation: yt-shine 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* ==================== Progress Shimmer ==================== */
+.progress-shimmer {
+  background-image: linear-gradient(110deg, #ff0000 20%, #ff4e45 40%, #ff6b6b 50%, #ff4e45 60%, #ff0000 80%);
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+}
+
+/* ==================== Phone Frame Mockup ==================== */
+.phone-frame {
+  position: relative;
+  border-radius: 2.4rem;
+  padding: 8px;
+  background: linear-gradient(160deg, #272727, #0f0f0f);
+  border: 2px solid var(--yt-border);
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 40px -15px rgba(255, 0, 0, 0.15);
+}
+.phone-notch {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90px;
+  height: 20px;
+  border-radius: 9999px;
+  background: #0f0f0f;
+  border: 1px solid var(--yt-border-dim);
+  z-index: 10;
+}
+.phone-screen {
+  border-radius: 1.8rem;
+  overflow: hidden;
+  background: #000;
+}
+
+/* ==================== History Card ==================== */
+.history-card {
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.history-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--yt-border);
+  box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.6);
+}
+.history-card video {
+  transition: transform 0.35s ease;
+}
+.history-card:hover video {
+  transform: scale(1.03);
+}
+
+/* ==================== Scroll Strip ==================== */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ==================== Accessible Focus ==================== */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--yt-blue);
+  outline-offset: 2px;
+}
+
+/* ==================== Toast Notification ==================== */
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.toast-item {
+  animation: toast-in 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ==================== Scene Timeline ==================== */
+.timeline-rail {
+  position: relative;
+}
+.timeline-rail::before {
+  content: "";
+  position: absolute;
+  top: 44px;
+  bottom: -12px;
+  right: 27px;
+  width: 2px;
+  background: linear-gradient(to bottom, rgba(255, 0, 0, 0.4), rgba(255, 0, 0, 0.05));
+}
+.timeline-rail-last::before {
+  display: none;
+}
+
+/* ==================== Status Pill Glow ==================== */
+.pill-processing {
+  box-shadow: 0 0 10px -2px rgba(255, 0, 0, 0.5);
+}
+.pill-queued {
+  box-shadow: 0 0 10px -2px rgba(245, 158, 11, 0.4);
+}
+
+/* ==================== YouTube-style Chips ==================== */
+.yt-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--yt-chip-bg);
+  color: var(--yt-text);
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+.yt-chip:hover {
+  background: var(--yt-surface-hover);
+}
+.yt-chip-active {
+  background: var(--yt-chip-active) !important;
+  color: var(--yt-chip-active-text) !important;
+}
+
+/* ==================== YouTube-style input fields ==================== */
+input[type="text"],
+input[type="password"],
+input[type="time"],
+input[type="datetime-local"],
+textarea,
+select {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="time"]:focus,
+input[type="datetime-local"]:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--yt-blue) !important;
+  box-shadow: 0 0 0 1px var(--yt-blue);
+}
+
+/* ==================== YouTube-like Section Headers ==================== */
+.yt-section-header {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--yt-text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ==================== Range slider YouTube-style ==================== */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--yt-border);
+  outline: none;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--yt-red);
+  cursor: pointer;
+  box-shadow: 0 0 4px rgba(255, 0, 0, 0.4);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--yt-red);
+  cursor: pointer;
+  border: none;
+}

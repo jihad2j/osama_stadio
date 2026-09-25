@@ -1,0 +1,29 @@
+# ContentFlow full-stack deployment (backend + frontend).
+# 1) Put your keys in backend/.env (never commit it).
+# 2) Point the frontend at the backend's public URL:
+#      $env:NEXT_PUBLIC_API_URL="https://api.example.com"  # Windows
+#      export NEXT_PUBLIC_API_URL=https://api.example.com  # Linux
+# 3) docker compose up --build -d
+services:
+  backend:
+    build: ./backend
+    env_file: ./backend/.env
+    environment:
+      - PORT=8000
+    volumes:
+      - ./backend/storage:/app/storage
+      - ./backend/assets:/app/assets:ro
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    restart: unless-stopped
