@@ -925,68 +925,65 @@ export default function OsamaStudioDashboard() {
       <div className="bg-orb w-[420px] h-[420px] bg-red-800/5 top-[35%] -right-52" style={{ animationDelay: "-6s" }} />
       <div className="bg-orb w-[380px] h-[380px] bg-red-900/5 bottom-0 left-1/3" style={{ animationDelay: "-10s" }} />
       <div className="bg-grid" />
-      {/* Top Header - Fully Responsive */}
-      <header className="border-b border-[#272727] bg-[#0f0f0f]/95 backdrop-blur-xl sticky top-0 z-40 relative">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 h-14 flex items-center justify-between gap-2">
-          {/* Logo & Title - Osama Studio */}
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-red-700 via-red-600 to-red-500 flex items-center justify-center shadow-lg shadow-red-600/30 shrink-0 border border-red-400/30">
+      {/* Top Header - Fully Responsive & Safe Area Adapted */}
+      <header className="border-b border-[#272727] bg-[#0f0f0f]/95 backdrop-blur-xl sticky top-0 z-40 relative pt-[env(safe-area-inset-top,0px)]">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 h-14 flex items-center justify-between gap-3">
+          {/* Right Side: Brand & Live Server Status (RTL Start) */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            {/* Logo */}
+            <div 
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-red-700 via-red-600 to-red-500 flex items-center justify-center shadow-lg shadow-red-600/30 shrink-0 border border-red-400/30 cursor-pointer"
+              onClick={() => setStep("input")}
+            >
               <span className="text-white font-black text-xs sm:text-sm tracking-tighter">OS</span>
             </div>
-            <div>
-              <h1 className="font-extrabold text-sm sm:text-lg tracking-tight flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                <span className="text-white font-black tracking-tight">Osama Studio</span>
-                <span className="text-[10px] sm:text-xs bg-red-600/20 text-red-400 border border-red-600/30 px-1.5 sm:px-2 py-0.5 rounded-full font-bold">
-                  استوديو أسامة
-                </span>
-                
-                {/* Real-time Server Connection Indicator */}
-                <button
-                  type="button"
-                  onClick={() => setIsSettingsOpen(true)}
-                  className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold transition-all border cursor-pointer ${
-                    serverState === "connected"
-                      ? "bg-emerald-950/40 border-emerald-500/30 text-emerald-400 hover:bg-emerald-950/60"
-                      : serverState === "checking"
-                      ? "bg-amber-950/40 border-amber-500/30 text-amber-400 hover:bg-amber-950/60"
-                      : "bg-red-950/40 border-red-500/30 text-red-400 hover:bg-red-950/60"
-                  }`}
-                  title={
-                    serverState === "connected"
-                      ? "السيرفر متصل بنجاح - انقر لفتح الإعدادات"
-                      : serverState === "checking"
-                      ? "جاري فحص الاتصال بالسيرفر..."
-                      : "السيرفر غير متصل - انقر لضبط الرابط أو إعادة المحاولة"
-                  }
-                >
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full ${
-                      serverState === "connected"
-                        ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]"
-                        : serverState === "checking"
-                        ? "bg-amber-400 animate-ping"
-                        : "bg-red-500 animate-pulse"
-                    }`}
-                  />
-                  <span>
-                    {serverState === "connected"
-                      ? "السيرفر متصل"
-                      : serverState === "checking"
-                      ? "فحص السيرفر..."
-                      : "السيرفر غير متصل ⚙️"}
+
+            {/* Title & Server Badge */}
+            <div className="flex items-center gap-2">
+              <div>
+                <h1 className="font-extrabold text-sm sm:text-base tracking-tight flex items-center gap-1.5 text-white">
+                  <span>Osama Studio</span>
+                  <span className="text-[10px] bg-red-600/20 text-red-400 border border-red-600/30 px-1.5 py-0.2 rounded-full font-bold hidden sm:inline-block">
+                    استوديو أسامة
                   </span>
-                </button>
-              </h1>
-              <p className="text-[10px] sm:text-xs text-[#aaa] hidden sm:flex items-center gap-1.5">
-                <span>استوديو الإنتاج الذكي</span>
-                <span>•</span>
-                <span className="text-red-400">Shorts & TikTok AI</span>
-              </p>
+                </h1>
+                <p className="text-[10px] text-[#888] hidden md:block">
+                  استوديو الذكاء الاصطناعي للفيديوهات القصيرة
+                </p>
+              </div>
+
+              {/* Real-time Server Connection Pill */}
+              <button
+                type="button"
+                onClick={() => setIsSettingsOpen(true)}
+                className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border transition-all cursor-pointer ${
+                  serverState === "connected"
+                    ? "bg-emerald-950/40 border-emerald-500/30 text-emerald-400 hover:bg-emerald-900/50"
+                    : serverState === "checking"
+                    ? "bg-amber-950/40 border-amber-500/30 text-amber-400 hover:bg-amber-900/50"
+                    : "bg-red-950/40 border-red-500/30 text-red-400 hover:bg-red-900/50"
+                }`}
+                title="انقر لفتح إعدادات السيرفر"
+              >
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    serverState === "connected"
+                      ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]"
+                      : serverState === "checking"
+                      ? "bg-amber-400 animate-ping"
+                      : "bg-red-500 animate-pulse"
+                  }`}
+                />
+                <span className="hidden sm:inline">
+                  {serverState === "connected" ? "متصل" : serverState === "checking" ? "فحص..." : "غير متصل"}
+                </span>
+              </button>
             </div>
           </div>
 
-          {/* Action Buttons & Badges */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Left Side: Navigation & Actions (RTL End) */}
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-1">
+            {/* 1. المكتبة (Library / History) */}
             <button
               onClick={() => {
                 if (step === "history") setStep("input");
@@ -995,21 +992,25 @@ export default function OsamaStudioDashboard() {
                   loadHistoryData();
                 }
               }}
-              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer shrink-0 ${
                 step === "history" 
-                  ? "bg-white text-[#0f0f0f]"
-                  : "bg-[#272727] hover:bg-[#3f3f3f] text-[#f1f1f1]"
+                  ? "bg-white text-[#0f0f0f] shadow-sm" 
+                  : "bg-[#272727] hover:bg-[#383838] text-[#f1f1f1]"
               }`}
+              title="سجل ومكتبة الفيديوهات المنتجة"
             >
               <Folder className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">المكتبة</span>
               {historyItems.length > 0 && (
-                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${step === "history" ? "bg-[#0f0f0f]/10 text-[#0f0f0f]" : "bg-red-600/80 text-white"}`}>
+                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                  step === "history" ? "bg-[#0f0f0f]/15 text-[#0f0f0f]" : "bg-red-600 text-white"
+                }`}>
                   {historyItems.length}
                 </span>
               )}
             </button>
 
+            {/* 2. الطابور (Queue) */}
             <button
               onClick={() => {
                 if (step === "queue") setStep("input");
@@ -1018,21 +1019,25 @@ export default function OsamaStudioDashboard() {
                   loadQueue();
                 }
               }}
-              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer shrink-0 ${
                 step === "queue"
-                  ? "bg-white text-[#0f0f0f]"
-                  : "bg-[#272727] hover:bg-[#3f3f3f] text-[#f1f1f1]"
+                  ? "bg-white text-[#0f0f0f] shadow-sm"
+                  : "bg-[#272727] hover:bg-[#383838] text-[#f1f1f1]"
               }`}
+              title="طابور المعالجة والإنتاج"
             >
               <Layers className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">الطابور</span>
               {queueItems.filter(q => q.status === "queued" || q.status === "processing").length > 0 && (
-                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${step === "queue" ? "bg-[#0f0f0f]/10 text-[#0f0f0f]" : "bg-amber-500 text-white"}`}>
+                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                  step === "queue" ? "bg-[#0f0f0f]/15 text-[#0f0f0f]" : "bg-amber-500 text-white"
+                }`}>
                   {queueItems.filter(q => q.status === "queued" || q.status === "processing").length}
                 </span>
               )}
             </button>
 
+            {/* 3. الطيار الآلي (Autopilot) */}
             <button
               onClick={() => {
                 if (step === "autopilot") setStep("input");
@@ -1041,65 +1046,73 @@ export default function OsamaStudioDashboard() {
                   loadSchedules();
                 }
               }}
-              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer shrink-0 ${
                 step === "autopilot"
-                  ? "bg-white text-[#0f0f0f]"
-                  : "bg-[#272727] hover:bg-[#3f3f3f] text-[#f1f1f1]"
+                  ? "bg-white text-[#0f0f0f] shadow-sm"
+                  : "bg-[#272727] hover:bg-[#383838] text-[#f1f1f1]"
               }`}
-              title="النشر التلقائي اليومي"
+              title="جدولة النشر التلقائي"
             >
               <Clock className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">الطيار الآلي</span>
               {schedules.filter(s => s.enabled).length > 0 && (
-                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${step === "autopilot" ? "bg-[#0f0f0f]/10 text-[#0f0f0f]" : "bg-blue-500 text-white"}`}>
+                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                  step === "autopilot" ? "bg-[#0f0f0f]/15 text-[#0f0f0f]" : "bg-blue-500 text-white"
+                }`}>
                   {schedules.filter(s => s.enabled).length}
                 </span>
               )}
             </button>
 
-            <button
-              onClick={() => setIsSettingsOpen(true)}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full bg-[#272727] hover:bg-[#3f3f3f] text-xs font-semibold text-[#f1f1f1] transition-all cursor-pointer"
-            >
-              <Settings2 className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">الإعدادات ⚙️</span>
-            </button>
-
+            {/* 4. حساب يوتيوب (YouTube Status) */}
             {health?.youtube?.authenticated ? (
-              <span className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-[#272727] text-[11px] font-semibold text-[#f1f1f1]">
+              <span className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-[#1e1e1e] border border-[#333] text-[11px] font-semibold text-[#f1f1f1] shrink-0" title={`قناة يوتيوب: ${health.youtube.channel_name}`}>
                 <YouTubeIcon className="w-3.5 h-3.5" />
-                <span className="max-w-[120px] truncate">{health.youtube.channel_name}</span>
+                <span className="max-w-[110px] truncate">{health.youtube.channel_name}</span>
               </span>
             ) : (
               <button
                 onClick={handleConnectYoutube}
                 disabled={connectingYt}
-                className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-red-600 hover:bg-red-700 text-[11px] font-bold text-white transition-all cursor-pointer disabled:opacity-50"
-                title="ربط حساب يوتيوب للنشر المباشر"
+                className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-red-600/90 hover:bg-red-600 text-[11px] font-bold text-white transition-all cursor-pointer disabled:opacity-50 shrink-0"
+                title="ربط حساب يوتيوب للنشر التلقائي"
               >
                 <Link2 className="w-3.5 h-3.5" />
-                <span>{connectingYt ? "جاري الربط..." : "ربط يوتيوب"}</span>
+                <span>{connectingYt ? "ربط..." : "ربط يوتيوب"}</span>
               </button>
             )}
+
+            {/* 5. الإعدادات (Settings Button) */}
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full bg-[#272727] hover:bg-[#383838] text-xs font-semibold text-[#f1f1f1] transition-all cursor-pointer shrink-0 border border-[#383838]/40"
+              title="إعدادات التطبيق والمفاتيح والسيرفر"
+            >
+              <Settings2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">الإعدادات</span>
+            </button>
           </div>
         </div>
+
         {/* Provider status strip */}
         {health && (
-          <div className="max-w-7xl mx-auto px-3 sm:px-6 pb-2 flex items-center gap-3 text-[10px] text-[#aaa] overflow-x-auto no-scrollbar">
-            <span className="flex items-center gap-1 shrink-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-              <span>السيناريو: {health.llm_provider}</span>
-            </span>
-            <span className="flex items-center gap-1 shrink-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-              <span>الصوت: {health.voice_provider}</span>
-            </span>
-            <span className="flex items-center gap-1 shrink-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-              <span>المرئيات: {health.media_provider}</span>
-            </span>
+          <div className="max-w-7xl mx-auto px-3 sm:px-6 py-1 flex items-center justify-between border-t border-[#1e1e1e] text-[10px] text-[#888] overflow-x-auto no-scrollbar">
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1 shrink-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                <span>السيناريو: <span className="text-[#ccc]">{health.llm_provider}</span></span>
+              </span>
+              <span className="flex items-center gap-1 shrink-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                <span>الصوت: <span className="text-[#ccc]">{health.voice_provider}</span></span>
+              </span>
+              <span className="flex items-center gap-1 shrink-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                <span>المرئيات: <span className="text-[#ccc]">{health.media_provider}</span></span>
+              </span>
+            </div>
             {!health.youtube?.authenticated && (
-              <button onClick={handleConnectYoutube} disabled={connectingYt} className="md:hidden flex items-center gap-1 shrink-0 text-red-500 font-bold cursor-pointer">
+              <button onClick={handleConnectYoutube} disabled={connectingYt} className="md:hidden flex items-center gap-1 shrink-0 text-red-400 font-bold cursor-pointer">
                 <Link2 className="w-3 h-3" />
                 <span>{connectingYt ? "جاري الربط..." : "ربط يوتيوب"}</span>
               </button>

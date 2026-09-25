@@ -1,9 +1,18 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Osama Studio · استوديو أسامة لصناعة ونشر الفيديوهات القصيرة",
   description: "Osama Studio - استوديو أسامة الذكي والمتكامل لصناعة وإنتاج ونشر الفيديوهات القصيرة بالذكاء الاصطناعي (Shorts & TikTok)",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+  themeColor: "#0f0f0f",
 };
 
 export default function RootLayout({
